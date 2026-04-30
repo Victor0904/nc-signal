@@ -1,8 +1,6 @@
 const express      = require('express');
 const multer       = require('multer');
 const { Pool }     = require('pg');
-const cloudinary   = require('cloudinary').v2;
-const { Readable } = require('stream');
 const path         = require('path');
 
 const app  = express();
@@ -20,7 +18,8 @@ pool.query(`
     title       TEXT NOT NULL,
     location    TEXT DEFAULT '',
     reporter    TEXT DEFAULT 'Anonyme',
-    photo       TEXT,
+    photo_data  TEXT,
+    photo_mime  TEXT,
     status      TEXT DEFAULT 'pending',
     taken_by    TEXT,
     resolved_by TEXT,
@@ -30,24 +29,7 @@ pool.query(`
   )
 `).catch(err => { console.error('DB init error:', err.message); process.exit(1); });
 
-// ─── Cloudinary ───────────────────────────────
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-function uploadToCloudinary(buffer) {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: 'nc-signal', transformation: [{ width: 1280, crop: 'limit', quality: 'auto' }] },
-      (err, result) => err ? reject(err) : resolve(result.secure_url)
-    );
-    Readable.from(buffer).pipe(stream);
-  });
-}
-
-// ─── Multer (mémoire → Cloudinary) ────────────
+// ─── Multer (mémoire) ─────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 },
@@ -58,7 +40,8 @@ const upload = multer({
 // ─── Helper snake_case → camelCase ────────────
 const fmt = r => ({
   id: r.id, title: r.title, location: r.location,
-  reporter: r.reporter, photo: r.photo, status: r.status,
+  reporter: r.reporter, status: r.status,
+  photo: r.photo_data ? `/api/ncs/${r.id}/photo` : null,
   takenBy: r.taken_by, resolvedBy: r.resolved_by,
   createdAt: r.created_at, takenAt: r.taken_at, resolvedAt: r.resolved_at,
 });
@@ -70,9 +53,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ─── Routes ───────────────────────────────────
 app.get('/api/ncs', async (_, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM ncs ORDER BY created_at DESC');
+    const { rows } = await pool.query(
+      'SELECT id,title,location,reporter,photo_data,photo_mime,status,taken_by,resolved_by,created_at,taken_at,resolved_at FROM ncs ORDER BY created_at DESC'
+    );
     res.json(rows.map(fmt));
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Sert l'image d'une NC
+app.get('/api/ncs/:id/photo', async (req, res) => {
+  try {
+    const { rows: [nc] } = await pool.query(
+      'SELECT photo_data, photo_mime FROM ncs WHERE id=$1', [req.params.id]
+    );
+    if (!nc?.photo_data) return res.status(404).end();
+    const buf = Buffer.from(nc.photo_data, 'base64');
+    res.set('Content-Type', nc.photo_mime || 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(buf);
+  } catch (err) { res.status(500).end(); }
 });
 
 app.post('/api/ncs', upload.single('photo'), async (req, res) => {
@@ -80,15 +79,13 @@ app.post('/api/ncs', upload.single('photo'), async (req, res) => {
     const { title, location, reporter } = req.body;
     if (!title?.trim()) return res.status(400).json({ error: 'Le titre est requis' });
 
-    let photo = null;
-    if (req.file && process.env.CLOUDINARY_CLOUD_NAME) {
-      try { photo = await uploadToCloudinary(req.file.buffer); }
-      catch (e) { console.error('Cloudinary:', e.message); }
-    }
+    const photoData = req.file ? req.file.buffer.toString('base64') : null;
+    const photoMime = req.file ? req.file.mimetype : null;
 
     const { rows } = await pool.query(
-      `INSERT INTO ncs (title, location, reporter, photo) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [title.trim(), (location||'').trim(), (reporter||'').trim()||'Anonyme', photo]
+      `INSERT INTO ncs (title, location, reporter, photo_data, photo_mime)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [title.trim(), (location||'').trim(), (reporter||'').trim()||'Anonyme', photoData, photoMime]
     );
     res.status(201).json(fmt(rows[0]));
   } catch (err) { res.status(500).json({ error: err.message }); }
