@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(node server.js)",
+      "Bash(curl -s http://localhost:3000/api/ncs)",
+      "Bash(curl -s -X POST http://localhost:3000/api/ncs -F 'title=Machine à café non nettoyée' -F 'location=Salle de pause 2ème étage' -F reporter=Marie)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:3000/api/ncs -F 'title=Machine a cafe non nettoyee' -F 'location=Salle de pause' -F reporter=Marie)",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/ncs/2/take -H 'Content-Type: application/json' -d '{\"name\":\"Thomas\"}')",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/ncs/2/resolve -H 'Content-Type: application/json' -d '{\"name\":\"Thomas\"}')",
+      "Bash(pkill -f \"node server.js\")"
+    ]
+  }
+}

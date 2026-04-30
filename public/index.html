@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#2563EB">
+  <title>NC Signal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────── -->
+  <header class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-mark">NC</div>
+        <span class="brand-name">Signal</span>
+      </div>
+      <div class="header-badge" id="headerBadge"></div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-f="all">Tous</button>
+      <button class="tab" data-f="pending">En attente</button>
+      <button class="tab" data-f="taken">En cours</button>
+      <button class="tab" data-f="resolved">Résolus</button>
+    </nav>
+  </header>
+
+  <!-- ── FEED ───────────────────────────── -->
+  <main class="feed" id="feed">
+    <div class="loader"><div class="spin"></div></div>
+  </main>
+
+  <!-- ── FAB ────────────────────────────── -->
+  <button class="fab" id="fab" aria-label="Signaler une NC">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="12" y1="4" x2="12" y2="20"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+    </svg>
+  </button>
+
+  <!-- ── MODAL : Ajouter NC ─────────────── -->
+  <div class="overlay" id="addOverlay">
+    <div class="sheet" id="addSheet" role="dialog" aria-label="Signaler une non-conformité">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-head">
+        <h2>Signaler une NC</h2>
+        <button class="close-btn" id="closeAdd" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="addForm" class="sheet-body">
+
+        <!-- Photo -->
+        <div class="photo-zone" id="photoZone">
+          <input type="file" id="photoInput" accept="image/*" hidden>
+          <div class="photo-empty" id="photoEmpty">
+            <div class="photo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <p>Prendre une photo ou choisir depuis la galerie</p>
+          </div>
+          <img id="photoPreview" class="photo-preview" alt="Aperçu" hidden>
+          <button type="button" class="change-photo" id="changePhoto" hidden>Changer la photo</button>
+        </div>
+
+        <div class="field">
+          <label for="fTitle">Problème constaté <span class="req">*</span></label>
+          <input id="fTitle" type="text" placeholder="Ex : Machine à café non nettoyée" maxlength="120" required autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label for="fLocation">Lieu</label>
+          <input id="fLocation" type="text" placeholder="Ex : Salle de pause 2ème étage" maxlength="80" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label for="fReporter">Votre prénom <span class="opt">(optionnel)</span></label>
+          <input id="fReporter" type="text" placeholder="Anonyme" maxlength="50" autocomplete="off">
+        </div>
+
+        <button type="submit" class="btn-primary" id="submitAdd">
+          <span id="submitText">Signaler</span>
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ── MODAL : Action ─────────────────── -->
+  <div class="overlay overlay-center" id="actionOverlay">
+    <div class="dialog" id="actionDialog" role="dialog">
+      <div class="dialog-head">
+        <div class="dialog-icon" id="dialogIcon"></div>
+        <h2 id="dialogTitle"></h2>
+        <p id="dialogSub"></p>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="actionName">Votre prénom</label>
+          <input id="actionName" type="text" placeholder="Entrez votre prénom" maxlength="50" autocomplete="off">
+        </div>
+        <div class="dialog-actions">
+          <button class="btn-ghost" id="cancelAction">Annuler</button>
+          <button class="btn-primary" id="confirmAction">
+            <span id="confirmText">Confirmer</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOAST ──────────────────────────── -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
